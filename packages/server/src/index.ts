@@ -9,12 +9,16 @@ const TICK_RATE_HZ = 30;
 const MAX_PLAYERS = 50;
 const MIN_INPUT_INTERVAL_MS = 20;
 
-const httpServer = createServer();
+const room = new GameRoom();
+
+/** Plain HTTP requests (Render health checks, manual pings) get a JSON status instead of hanging. */
+const httpServer = createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ status: 'ok', players: room.playerCount() }));
+});
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: { origin: process.env.CLIENT_ORIGIN ?? '*' },
 });
-
-const room = new GameRoom();
 const lastInputAt = new Map<string, number>();
 
 io.on('connection', (socket) => {
