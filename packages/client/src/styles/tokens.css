@@ -1,0 +1,38 @@
+:root {
+  /* Couleurs */
+  --color-bg: #0f1117;
+  --color-surface: #1a1d27;
+  --color-surface-alt: #232735;
+  --color-text: #f5f6fa;
+  --color-text-muted: #9aa0b4;
+  --color-primary: #5b8cff;
+  --color-primary-hover: #4574e8;
+  --color-danger: #ff5b6e;
+  --color-border: #2e3243;
+
+  /* Typographie */
+  --font-family-base: 'Segoe UI', system-ui, sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 2rem;
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
+
+  /* Espacements */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+
+  /* Rayons & ombres */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --shadow-panel: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  /* Z-index */
+  --z-hud: 10;
+  --z-menu: 100;
+}

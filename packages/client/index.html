@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vibe.io</title>
+    <link rel="stylesheet" href="/src/styles/tokens.css" />
+    <link rel="stylesheet" href="/src/styles/global.css" />
+  </head>
+  <body>
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud" class="hud" hidden>
+      <div id="hud-score" class="hud__score">Score: 0</div>
+    </div>
+
+    <aside id="leaderboard" class="leaderboard" hidden>
+      <h2 class="leaderboard__title">Classement</h2>
+      <ol id="leaderboard-list" class="leaderboard__list"></ol>
+    </aside>
+
+    <div id="menu" class="menu">
+      <div class="menu__panel">
+        <h1 class="menu__title">Vibe.io</h1>
+        <p id="menu-message" class="menu__message"></p>
+        <form id="join-form" class="join-form">
+          <input
+            id="pseudo-input"
+            class="join-form__input"
+            type="text"
+            placeholder="Ton pseudo"
+            maxlength="16"
+            autocomplete="off"
+            required
+          />
+          <button type="submit" class="button button--primary">Jouer</button>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
