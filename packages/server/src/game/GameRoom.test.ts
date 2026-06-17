@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PelletState, Vector2 } from '@vibe-io/shared';
+import { WORLD, type PelletState, type Vector2 } from '@vibe-io/shared';
 import { GameRoom, type PlayerDeath } from './GameRoom.js';
 import { distance } from './physics.js';
 import { BASE_RADIUS, radiusFromScore, speedFromRadius } from './rules.js';
@@ -38,10 +38,46 @@ function findIsolatedBonusPellet(pellets: PelletState[], minSeparation = 80): Pe
   return isolated;
 }
 
-/** Asserts no pellet sits close enough to `position` to be swept up incidentally. */
-function expectNoPelletNear(pellets: PelletState[], position: Vector2, minSeparation = 80): void {
-  const tooClose = pellets.some((p) => distance(p.position, position) < minSeparation);
-  if (tooClose) throw new Error('A pellet is too close to the target position for a deterministic test');
+/**
+ * Finds a point with no pellet nearby, so two players can rendezvous there
+ * without either of them incidentally sweeping up a pellet on arrival.
+ */
+function findClearPoint(pellets: PelletState[], minSeparation = 80): Vector2 {
+  const candidates: Vector2[] = [
+    { x: WORLD.WIDTH / 2, y: WORLD.HEIGHT / 2 },
+    { x: WORLD.WIDTH / 4, y: WORLD.HEIGHT / 4 },
+    { x: (WORLD.WIDTH * 3) / 4, y: WORLD.HEIGHT / 4 },
+    { x: WORLD.WIDTH / 4, y: (WORLD.HEIGHT * 3) / 4 },
+    { x: (WORLD.WIDTH * 3) / 4, y: (WORLD.HEIGHT * 3) / 4 },
+  ];
+  const clear = candidates.find((point) => pellets.every((p) => distance(p.position, point) >= minSeparation));
+  if (!clear) throw new Error('No clear point found for deterministic test setup');
+  return clear;
+}
+
+/**
+ * `GameRoom.update` resolves pellet collisions for every player each tick,
+ * including ones not being intentionally moved in a given test step. A
+ * player whose random spawn happens to land near a pellet would eat it
+ * incidentally the first time *any* player's movement triggers an update.
+ * Retrying spawn placement until every player starts clear of all pellets
+ * removes that source of flakiness instead of just narrowing its window.
+ */
+function createRoomWithPlayersAwayFromPellets(
+  players: Array<readonly [id: string, pseudo: string]>,
+  minSeparation = 80,
+): GameRoom {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const room = new GameRoom();
+    for (const [id, pseudo] of players) room.addPlayer(id, pseudo);
+
+    const snapshot = room.getSnapshot();
+    const allClear = snapshot.players.every((player) =>
+      snapshot.pellets.every((pellet) => distance(player.position, pellet.position) >= minSeparation),
+    );
+    if (allClear) return room;
+  }
+  throw new Error('Could not spawn players away from all pellets for a deterministic test');
 }
 
 describe('GameRoom', () => {
@@ -75,12 +111,14 @@ describe('GameRoom', () => {
   });
 
   it('does not let two equally-sized players eat each other', () => {
-    const room = new GameRoom();
-    room.addPlayer('a', 'A');
-    room.addPlayer('b', 'B');
-    const b = room.getSnapshot().players.find((p) => p.id === 'b')!;
+    const room = createRoomWithPlayersAwayFromPellets([
+      ['a', 'A'],
+      ['b', 'B'],
+    ]);
+    const meetingPoint = findClearPoint(room.getSnapshot().pellets);
+    teleportPlayer(room, 'b', meetingPoint);
 
-    const deaths = teleportPlayer(room, 'a', b.position);
+    const deaths = teleportPlayer(room, 'a', meetingPoint);
 
     expect(deaths).toHaveLength(0);
     expect(room.getSnapshot().players).toHaveLength(2);
@@ -103,16 +141,20 @@ describe('GameRoom', () => {
   });
 
   it('lets a bigger player eat a smaller one and inherit its score', () => {
-    const room = new GameRoom();
-    room.addPlayer('a', 'Predator');
-    room.addPlayer('b', 'Prey');
+    const room = createRoomWithPlayersAwayFromPellets([
+      ['a', 'Predator'],
+      ['b', 'Prey'],
+    ]);
 
-    const bonus = findIsolatedBonusPellet(room.getSnapshot().pellets);
+    const pellets = room.getSnapshot().pellets;
+    const bonus = findIsolatedBonusPellet(pellets);
+    const meetingPoint = findClearPoint(pellets);
+
+    // Both rendezvous on a pellet-free point so the final collision can only
+    // be the predator/prey encounter — never an incidental pellet pickup.
+    teleportPlayer(room, 'b', meetingPoint);
     teleportPlayer(room, 'a', bonus.position);
-
-    const b = room.getSnapshot().players.find((p) => p.id === 'b')!;
-    expectNoPelletNear(room.getSnapshot().pellets, b.position);
-    const deaths = teleportPlayer(room, 'a', b.position);
+    const deaths = teleportPlayer(room, 'a', meetingPoint);
 
     expect(deaths).toEqual([{ victimId: 'b', killerPseudo: 'Predator' }]);
     const snapshot = room.getSnapshot();
