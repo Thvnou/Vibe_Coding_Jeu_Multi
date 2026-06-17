@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: vibe-io-server
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build -w packages/shared && npm run build -w packages/server
+    startCommand: npm run start -w packages/server
+    envVars:
+      - key: CLIENT_ORIGIN
+        sync: false
