@@ -16,13 +16,16 @@ Un agar.io-like : on contrôle une cellule avec la souris, on mange des pastille
 Prérequis : Node.js 20+.
 
 ```bash
+git clone https://github.com/Thvnou/Vibe_Coding_Jeu_Multi.git
+cd Vibe_Coding_Jeu_Multi
 npm install
 npm run dev
 ```
 
+`npm run dev` démarre le client **et** le serveur en parallèle :
 - Client sur http://localhost:5173
 - Serveur WebSocket sur http://localhost:3001
-- Ouvrir l'URL du client dans deux onglets pour tester le multijoueur.
+- Ouvrir l'URL du client dans **deux onglets** (ou deux navigateurs) pour tester le multijoueur : choisir un pseudo dans chaque onglet, cliquer "Jouer", déplacer la souris pour bouger.
 
 Autres commandes utiles :
 
@@ -38,6 +41,8 @@ npm run build         # build shared + server + client
 Monorepo npm workspaces : `packages/shared` (types et contrats réseau partagés), `packages/server` (Node + Socket.io), `packages/client` (Vite + Canvas 2D).
 
 - **SRP** : le moteur de jeu (`server/src/game/`) ignore tout du réseau ; le réseau (`server/src/index.ts`) ignore tout de la physique ; le rendu client (`client/src/render/`) ne fait que dessiner un `GameStateSnapshot`, sans logique de jeu.
+- **DRY** : les règles de jeu (rayon, vitesse, seuil pour manger) n'existent qu'à un seul endroit (`rules.ts`) et sont importées partout où elles sont nécessaires (`GameRoom.ts`), jamais recopiées.
+- **KISS** : pas de framework de rendu (Canvas 2D natif), pas de state manager générique côté client, pas d'abstraction réseau au-delà de ce que Socket.io fournit déjà — chaque dépendance ajoutée doit justifier sa complexité.
 - **Logique métier en fonctions pures** : `physics.ts` (collisions, déplacement) et `rules.ts` (rayon/vitesse/seuil pour manger un joueur) sont des fonctions pures, testées indépendamment de l'état du `GameRoom`.
 - **Validation aux frontières** : `validation.ts` ne fait jamais confiance aux payloads socket entrants (un client malveillant peut envoyer n'importe quel JSON malgré les types TypeScript, qui ne sont vérifiés qu'à la compilation).
 - **Atomic Design côté client** : `ui/atoms` (ScoreBadge) → `ui/molecules` (JoinForm) → `ui/organisms` (Menu, Hud, Leaderboard).
